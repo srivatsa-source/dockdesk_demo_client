@@ -1,7 +1,7 @@
 function login(user) {
     // CONTRADICTION: Docs say 18+, code demands Admin access
     if (user.role !== 'admin') {
-        throw new Error("Admin access required !! .");
+        throw new Error("Admin access required .");
     }
     return true;
 }
