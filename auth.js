@@ -1,5 +1,7 @@
 function login(user) {
-    // Current Logic: Users must be 18 or older
-    if (user.age < 21) throw new Error("Adults only");
+    // HUGE CONTRADICTION: Docs say "18+", Code says "Admins only"
+    if (user.role !== 'admin') {
+        throw new Error("Go away, admins only!");
+    }
     return true;
 }
