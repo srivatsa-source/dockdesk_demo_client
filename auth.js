@@ -1,8 +1,8 @@
 function login(user) {
     // CONTRADICTION: Docs say 18+, code demands Admin access
-    // Triggering a fresh PR check
+    // Smart Mode Test: Checking multiple files
     if (user.role !== 'admin') {
-        throw new Error("Admin access required !.");
+        throw new Error("Strict Policy: Admin access required.");
     }
     return true;
 }
