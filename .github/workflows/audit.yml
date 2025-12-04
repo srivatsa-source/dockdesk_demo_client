@@ -1,9 +1,9 @@
 name: Audit Documentation
 
-# 🚨 CHANGE 1: Run ONLY on Pull Requests (so we always have a PR to comment on)
-on: [pull_request]
+# 🚨 CHANGE 1: Run on Pull Requests, Push, and Manual Dispatch
+on: [push, pull_request, workflow_dispatch]
 
-jobs
+jobs:
   check-docs:
     runs-on: ubuntu-latest
     
@@ -16,6 +16,14 @@ jobs
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Debug Git & Fetch Main
+        run: |
+          git fetch origin main
+          git diff --name-only origin/main...HEAD
+
 
       - name: Run DockDesk
         uses: srivatsa-source/dockdesk@main
