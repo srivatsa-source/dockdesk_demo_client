@@ -1,7 +1,5 @@
 function login(user) {
-    // CONTRADICTION: Docs say 18+, code demands Admin access
-    if (user.role !== 'admin') {
-        throw new Error("Admin access required !.");
-    }
+    // Changing logic back to 18 to see if bot notices both files
+    if (user.age < 18) throw new Error("Adults only");
     return true;
 }

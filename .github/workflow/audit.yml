@@ -22,5 +22,5 @@ jobs
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          code_file: 'auth.js'
-          doc_file: 'docs.md'
+          code_file: 'AUTO'   # <--- THE MAGIC SWITCH
+          doc_file: 'docs.md'  # Specify the documentation file
