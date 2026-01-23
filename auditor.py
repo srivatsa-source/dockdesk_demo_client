@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import google.generativeai as genai
+import requests
 from colorama import Fore, Style, init
 from dotenv import load_dotenv
 
@@ -11,16 +12,48 @@ load_dotenv()
 init(autoreset=True)
 
 # --- CONFIGURATION ---
-api_key = os.getenv("GEMINI_API_KEY")
-# Using the model that worked for you last time
-MODEL_NAME = 'gemini-flash-latest' 
 
-if not api_key:
-    print(f"{Fore.RED}CRITICAL ERROR: No API Key found.")
-    sys.exit(1)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+MODEL_NAME = 'gemini-flash-latest'
+GROQ_MODEL = 'mixtral-8x7b-32768'  # or another available model
 
-genai.configure(api_key=api_key)
-model = genai.GenerativeModel(MODEL_NAME)
+def get_gemini_response(system_prompt):
+    if not GEMINI_API_KEY:
+        return None
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel(MODEL_NAME)
+        response = model.generate_content(system_prompt)
+        return response.text
+    except Exception as e:
+        print(f"{Fore.YELLOW}Gemini failed: {e}")
+        return None
+
+def get_groq_response(system_prompt):
+    if not GROQ_API_KEY:
+        return None
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": "You are DockDesk, a strict Code Auditor."},
+            {"role": "user", "content": system_prompt}
+        ],
+        "max_tokens": 2048
+    }
+    try:
+        resp = requests.post(url, headers=headers, json=data, timeout=60)
+        resp.raise_for_status()
+        result = resp.json()
+        return result["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"{Fore.YELLOW}Groq failed: {e}")
+        return None
 
 def read_file(filepath):
     try:
@@ -66,9 +99,18 @@ def run_audit(code_path, doc_path):
 
     print(f"{Fore.CYAN}🚀 Analyzing Knowledge Integrity...{Style.RESET_ALL}")
     
+
+    # Try Gemini first, then Groq
+    result_text = get_gemini_response(system_prompt)
+    if not result_text:
+        print(f"{Fore.YELLOW}Falling back to Groq...")
+        result_text = get_groq_response(system_prompt)
+    if not result_text:
+        print(f"{Fore.RED}💥 Both Gemini and Groq failed. No API response.")
+        sys.exit(1)
+
     try:
-        response = model.generate_content(system_prompt)
-        result_text = response.text.replace("```json", "").replace("```", "").strip()
+        result_text = result_text.replace("```json", "").replace("```", "").strip()
         data = json.loads(result_text)
 
         print("\n" + "="*40)
@@ -76,7 +118,7 @@ def run_audit(code_path, doc_path):
         if data["status"] == "FAIL":
             # 1. SHOW THE PROBLEM
             print(f"{Fore.RED}❌ KNOWLEDGE DRIFT DETECTED")
-            print(f"{Fore.YELLOW}📉 Hallucination Risk: {Fore.RED}{data['risk_level']}")
+            print(f"{Fore.YELLOW}📉 Hallucination Risk: {Fore.RED}{data['risk_level']}" )
             print(f"{Fore.WHITE}⚠️ Business Impact: {data['impact']}")
             print("-" * 40)
             
