@@ -1,33 +1,41 @@
-name: Audit Documentation
+name: DockDesk Audit
 
-# 🚨 CHANGE 1: Run on Pull Requests, Push, and Manual Dispatch
-on: [push, pull_request, workflow_dispatch]
+on: [pull_request, push]
 
 jobs:
-  check-docs:
+  audit:
     runs-on: ubuntu-latest
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
     
-    # 🚨 CHANGE 2: Grant permission to write comments
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Debug Git & Fetch Main
+      
+      - name: Wait for Ollama
         run: |
-          git fetch origin main
-          git diff --name-only origin/main...HEAD
-
-      - name: Run DockDesk
-        uses: srivatsa-source/dockdesk@main
+          for i in {1..30}; do
+            curl -s http://localhost:11434/api/tags && break
+            sleep 2
+          done
+      
+      - name: Pull Model
+        run: |
+          curl -X POST http://localhost:11434/api/pull \
+            -d '{"name": "qwen2.5-coder:3b"}'
+          sleep 10
+      
+      - uses: dockdesk/auditor@v2
         with:
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          code_file: 'AUTO'   # <--- THE MAGIC SWITCH
-          doc_file: 'docs.md'  # Specify the documentation file
+          model: 'qwen2.5-coder:3b'
+          fail_on_risk: 'HIGH'
+      
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-report
+          path: audit_report.md
