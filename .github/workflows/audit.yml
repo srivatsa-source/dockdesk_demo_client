@@ -29,10 +29,13 @@ jobs:
             -d '{"name": "qwen2.5-coder:3b"}'
           sleep 10
       
-      - uses: dockdesk/auditor@v2
+      - name: Run DockDesk
+        uses: srivatsa-source/dockdesk@main
         with:
           model: 'qwen2.5-coder:3b'
           fail_on_risk: 'HIGH'
+          auto_fix: 'false'
+          ollama_host: 'http://localhost:11434'
       
       - uses: actions/upload-artifact@v4
         if: always()
