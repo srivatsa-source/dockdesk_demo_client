@@ -1,0 +1,48 @@
+name: DockDesk Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Wait for Ollama
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:11434/api/tags; then
+              echo "Ollama ready!"
+              break
+            fi
+            sleep 1
+          done
+      
+      - name: Pull Model
+        run: |
+          curl -X POST http://localhost:11434/api/pull \
+            -d '{"name": "qwen2.5-coder:3b"}' \
+            -H "Content-Type: application/json"
+          sleep 15
+      
+      - name: Run DockDesk
+        uses: srivatsa-source/dockdesk@main
+        with:
+          model: 'qwen2.5-coder:3b'
+          fail_on_risk: 'HIGH'
+      
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-report
+          path: audit_report.md
