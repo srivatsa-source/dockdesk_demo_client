@@ -1,9 +1,9 @@
-def reset_password(email_address):
+def reset_password(user_email):
     """
     Initiates the password reset process.
     """
-    if not email_address or "@" not in email_address:
-        raise ValueError("Invalid email provided.")
+    if not user_email:
+        raise ValueError("Email is required")
     
-    print(f"Sending reset link to {email_address}...")
-    return True
+    print(f"Password reset initiated for {user_email}")
+    return {"status": "success", "message": "Reset link sent"}

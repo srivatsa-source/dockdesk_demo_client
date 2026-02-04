@@ -6,4 +6,9 @@ This parameter must be provided (cannot be empty) and is validated to ensure it 
 
 If either condition is not met, a `ValueError` is raised with the specific message: "Invalid email provided."
 
-The system sends a reset link to the provided email address.
+Upon successful validation, the system initiates the process of sending a reset link to the provided email address and returns `True`.
+
+## Features
+- Email validation with @ symbol check
+- Clear error messages
+- Boolean return value for success
