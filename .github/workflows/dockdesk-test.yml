@@ -1,0 +1,61 @@
+name: DockDesk Test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: Documentation Audit
+    runs-on: ubuntu-latest
+    
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Wait for Ollama
+        run: |
+          echo "Waiting for Ollama service..."
+          for i in {1..30}; do
+            if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+              echo "Ollama ready!"
+              break
+            fi
+            echo "Attempt $i/30"
+            sleep 2
+          done
+      
+      - name: Pull Model
+        run: |
+          echo "Pulling qwen2.5-coder:3b..."
+          curl -X POST http://localhost:11434/api/pull \
+            -d '{"name": "qwen2.5-coder:3b"}' \
+            -H "Content-Type: application/json"
+          sleep 15
+      
+      - name: Run DockDesk Audit
+        uses: dockdesk/auditor@v2
+        with:
+          model: 'qwen2.5-coder:3b'
+          auto_tune: 'false'
+          fail_on_risk: 'MEDIUM'
+          output_format: 'md'
+          auto_fix: 'false'
+      
+      - name: Upload Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dockdesk-audit-report
+          path: audit_report.md
+          retention-days: 7
