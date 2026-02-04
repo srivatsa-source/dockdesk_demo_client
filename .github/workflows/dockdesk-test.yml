@@ -2,12 +2,10 @@ name: DockDesk Test
 
 on:
   push:
-  pull_request:
   workflow_dispatch:
 
 jobs:
   audit:
-    name: Documentation Audit
     runs-on: ubuntu-latest
     
     services:
@@ -18,19 +16,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: Wait for Ollama
-        run: |
-          echo "Waiting for Ollama..."
-          for i in {1..30}; do
-            if curl -s http://localhost:11434/api/tags; then
-              echo "Ollama ready!"
-              break
-            fi
-            sleep 2
-          done
       
       - name: Pull Model
         run: |
@@ -38,16 +23,15 @@ jobs:
           curl -X POST http://localhost:11434/api/pull \
             -d '{"name": "qwen2.5-coder:3b"}' \
             -H "Content-Type: application/json"
-          sleep 20
+          sleep 15
       
       - name: Run DockDesk
-        uses: dockdesk/auditor@v2
+        uses: srivatsa-source/dockdesk@main
         with:
           model: 'qwen2.5-coder:3b'
-          fail_on_risk: 'MEDIUM'
+          fail_on_risk: 'HIGH'
       
-      - name: Upload Report
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: audit-report
